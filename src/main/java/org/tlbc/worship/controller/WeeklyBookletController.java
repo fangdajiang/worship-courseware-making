@@ -4,7 +4,6 @@ import com.itextpdf.text.Document;
 import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.pdf.PdfWriter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.tlbc.worship.model.SundayPeriodEnum;
@@ -20,7 +19,7 @@ public class WeeklyBookletController {
     private WeeklyBookletService weeklyBookletService;
 
     @GetMapping(value = "/word")
-    public ResponseEntity<Resource> generateWord(@RequestParam("sundayDate") String yyyyMMdd) {
+    public ResponseEntity<byte[]> generateWord(@RequestParam("sundayDate") String yyyyMMdd) {
         return weeklyBookletService.generateWordSundayBooklet(yyyyMMdd, SundayPeriodEnum.AM);
     }
 

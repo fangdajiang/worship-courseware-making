@@ -2,9 +2,9 @@ package org.tlbc.worship.service;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.util.Units;
+import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
@@ -21,7 +21,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 
 @Service
@@ -36,23 +35,16 @@ public class WeeklyBookletService {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         doc.write(baos);
-
-//        ByteArrayOutputStream out = new ByteArrayOutputStream();
-//        document.write(out);
-//        ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
-//        document.close();
+        doc.close();
 
         return new ResponseEntity<>(baos.toByteArray(), getWordHeaders(yyyyMMdd), HttpStatus.OK);
-
-//        return ResponseEntity.ok().headers(getWordHeaders(yyyyMMdd)).contentLength(out.size())
-//                .contentType(MediaType.parseMediaType("application/octet-stream"))
-//                .body(new InputStreamResource(in));
     }
 
     @SneakyThrows
     private static XWPFDocument createWord(String yyyyMMdd, SundayPeriodEnum period) {
         XWPFDocument document = new XWPFDocument();
         XWPFParagraph paragraph = document.createParagraph();
+        paragraph.setAlignment(ParagraphAlignment.CENTER);
         XWPFRun run = paragraph.createRun();
         if (SundayPeriodEnum.AM.equals(period)) {
             run.setText(yyyyMMdd);
@@ -67,22 +59,20 @@ public class WeeklyBookletService {
     }
 
     private static void addPng(XWPFRun run, String imgUrl) throws IOException, InvalidFormatException {
-        byte[] imgBytes = IOUtils.toByteArray(new URL(imgUrl));
-        BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(imgBytes));
-        int width = originalImage.getWidth();
-        int height = originalImage.getHeight();
-        float scale = Math.min(1f * width / 400, 1f * height / 400);
-        int scaledWidth = (int)(width / scale);
-        int scaledHeight = (int)(height / scale);
-        BufferedImage resizedImage = new BufferedImage(scaledWidth, scaledHeight, originalImage.getType());
-        Graphics2D g = resizedImage.createGraphics();
-        g.drawImage(originalImage, 0, 0, scaledWidth, scaledHeight, null);
-        g.dispose();
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        ImageIO.write(resizedImage, "png", os);
-        InputStream is = new ByteArrayInputStream(os.toByteArray());
-        run.addBreak();
-        run.addPicture(is, XWPFDocument.PICTURE_TYPE_PNG, "image.png", Units.toEMU(scaledWidth), Units.toEMU(scaledHeight));
+        BufferedImage originalImage = ImageIO.read(new URL(imgUrl));
+        float scale = 0.145f;
+        int scaledWidth = (int) (originalImage.getWidth() * scale);
+        int scaledHeight = (int) (originalImage.getHeight() * scale);
+        BufferedImage resized = new BufferedImage(scaledWidth, scaledHeight, originalImage.getType());
+        Graphics2D g2 = resized.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2.drawImage(originalImage, 0, 0, scaledWidth, scaledHeight, null);
+        g2.dispose();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ImageIO.write(resized, "png", byteArrayOutputStream);
+        byte[] bytes = byteArrayOutputStream.toByteArray();
+
+        run.addPicture(new ByteArrayInputStream(bytes), XWPFDocument.PICTURE_TYPE_PNG, "", Units.toEMU(scaledWidth), Units.toEMU(scaledHeight));
     }
 
     private static void check(String yyyyMMdd) throws IllegalArgumentException {

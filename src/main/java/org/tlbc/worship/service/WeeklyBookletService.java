@@ -2,6 +2,7 @@ package org.tlbc.worship.service;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.util.Units;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
@@ -17,7 +18,11 @@ import org.tlbc.worship.model.SundayPeriodEnum;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 
 @Service
 @Slf4j
@@ -32,8 +37,16 @@ public class WeeklyBookletService {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         doc.write(baos);
 
+//        ByteArrayOutputStream out = new ByteArrayOutputStream();
+//        document.write(out);
+//        ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
+//        document.close();
+
         return new ResponseEntity<>(baos.toByteArray(), getWordHeaders(yyyyMMdd), HttpStatus.OK);
 
+//        return ResponseEntity.ok().headers(getWordHeaders(yyyyMMdd)).contentLength(out.size())
+//                .contentType(MediaType.parseMediaType("application/octet-stream"))
+//                .body(new InputStreamResource(in));
     }
 
     @SneakyThrows
@@ -54,19 +67,22 @@ public class WeeklyBookletService {
     }
 
     private static void addPng(XWPFRun run, String imgUrl) throws IOException, InvalidFormatException {
-        FileInputStream stream = new FileInputStream(imgUrl);
-        BufferedImage originalImage = ImageIO.read(stream);
-        int width = originalImage.getWidth() * 5;
-        int height = originalImage.getHeight() * 5;
-        BufferedImage resizedImage = new BufferedImage(width, height, originalImage.getType());
+        byte[] imgBytes = IOUtils.toByteArray(new URL(imgUrl));
+        BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(imgBytes));
+        int width = originalImage.getWidth();
+        int height = originalImage.getHeight();
+        float scale = Math.min(1f * width / 400, 1f * height / 400);
+        int scaledWidth = (int)(width / scale);
+        int scaledHeight = (int)(height / scale);
+        BufferedImage resizedImage = new BufferedImage(scaledWidth, scaledHeight, originalImage.getType());
         Graphics2D g = resizedImage.createGraphics();
-        g.drawImage(originalImage, 0, 0, width, height, null);
+        g.drawImage(originalImage, 0, 0, scaledWidth, scaledHeight, null);
         g.dispose();
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         ImageIO.write(resizedImage, "png", os);
         InputStream is = new ByteArrayInputStream(os.toByteArray());
         run.addBreak();
-        run.addPicture(is, XWPFDocument.PICTURE_TYPE_PNG, "image.png", Units.toEMU(width/5), Units.toEMU(height/5));
+        run.addPicture(is, XWPFDocument.PICTURE_TYPE_PNG, "image.png", Units.toEMU(scaledWidth), Units.toEMU(scaledHeight));
     }
 
     private static void check(String yyyyMMdd) throws IllegalArgumentException {

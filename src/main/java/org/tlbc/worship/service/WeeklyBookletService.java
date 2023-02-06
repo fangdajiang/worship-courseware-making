@@ -57,19 +57,24 @@ public class WeeklyBookletService {
         }
         return document;
     }
+    private static final int MAX_WIDTH = 750; // Maximum width of the image in points
+    private static final int MAX_HEIGHT = 750; // Maximum height of the image in points
 
     private static void addPng(XWPFRun run, String imgUrl) throws IOException, InvalidFormatException {
         BufferedImage originalImage = ImageIO.read(new URL(imgUrl));
-        float scale = 0.145f;
-        int scaledWidth = (int) (originalImage.getWidth() * scale);
-        int scaledHeight = (int) (originalImage.getHeight() * scale);
-        BufferedImage resized = new BufferedImage(scaledWidth, scaledHeight, originalImage.getType());
-        Graphics2D g2 = resized.createGraphics();
+//        float scale = 0.145f;
+//        int scaledWidth = (int) (originalImage.getWidth() * scale);
+//        int scaledHeight = (int) (originalImage.getHeight() * scale);
+        double scaleFactor = Math.min((double)MAX_WIDTH / originalImage.getWidth(), (double)MAX_HEIGHT / originalImage.getHeight());
+        int scaledWidth = (int) (scaleFactor * originalImage.getWidth());
+        int scaledHeight = (int) (scaleFactor * originalImage.getHeight());
+        BufferedImage scaledImage = new BufferedImage(scaledWidth, scaledHeight, originalImage.getType());
+        Graphics2D g2 = scaledImage.createGraphics();
         g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
         g2.drawImage(originalImage, 0, 0, scaledWidth, scaledHeight, null);
         g2.dispose();
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ImageIO.write(resized, "png", byteArrayOutputStream);
+        ImageIO.write(scaledImage, "png", byteArrayOutputStream);
         byte[] bytes = byteArrayOutputStream.toByteArray();
 
         run.addPicture(new ByteArrayInputStream(bytes), XWPFDocument.PICTURE_TYPE_PNG, "", Units.toEMU(scaledWidth), Units.toEMU(scaledHeight));

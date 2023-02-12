@@ -4,10 +4,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.util.Units;
-import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFParagraph;
-import org.apache.poi.xwpf.usermodel.XWPFRun;
+import org.apache.poi.xwpf.usermodel.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -26,6 +23,9 @@ import java.net.URL;
 @Service
 @Slf4j
 public class WeeklyBookletService {
+
+    private final static String SONG_URL_PREFIX = "https://hymns.oss-cn-shanghai.aliyuncs.com/pics/";
+    private final static String SONG_FILE_NAME_SUFFIX = ".png";
 
     @SneakyThrows
     public ResponseEntity<byte[]> generateWordSundayBooklet(String yyyyMMdd, SundayPeriodEnum period) {
@@ -48,10 +48,13 @@ public class WeeklyBookletService {
         XWPFRun run = paragraph.createRun();
         if (SundayPeriodEnum.AM.equals(period)) {
             run.setText(yyyyMMdd);
-            run.addBreak();
-            String imgUrl = "https://hymns.oss-cn-shanghai.aliyuncs.com/pics/%E8%B5%8E%E4%BB%B7%E5%B7%B2%E4%BB%98.png";
-            addPng(run, imgUrl);
-            addPng(run, "https://hymns.oss-cn-shanghai.aliyuncs.com/pics/%E4%B8%BB%E6%89%8B%E6%89%80%E9%80%A0.png");
+            addPng(run, SONG_URL_PREFIX + "齐肃立称颂主" + SONG_FILE_NAME_SUFFIX);
+            run.addBreak(BreakType.COLUMN);
+            addPng(run, SONG_URL_PREFIX + "祂除我罪" + SONG_FILE_NAME_SUFFIX);
+            run.addBreak(BreakType.COLUMN);
+            addPng(run, SONG_URL_PREFIX + "祢信实何广大" + SONG_FILE_NAME_SUFFIX);
+            run.addBreak(BreakType.COLUMN);
+            addPng(run, SONG_URL_PREFIX + "我何处去？" + SONG_FILE_NAME_SUFFIX);
         } else {
             run.addBreak();
         }

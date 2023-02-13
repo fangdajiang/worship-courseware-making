@@ -10,8 +10,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.tlbc.worship.model.SundayAmMenuEntity;
 import org.tlbc.worship.model.SundayPeriodEnum;
+import org.tlbc.worship.repository.SundayAmMenuRepository;
 
+import javax.annotation.Resource;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -28,7 +31,14 @@ import java.util.Date;
 @Slf4j
 public class WeeklyBookletService {
 
-    private final static String REPORT_TITLE = "主日上午崇拜";
+    @Resource
+    private SundayAmMenuRepository sundayAmMenuRepository;
+
+    private static final ThreadLocal<SimpleDateFormat> SIMPLE_DATE_FORMAT_THREAD_LOCAL =
+            ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd"));
+    private final static String DATE_ON_REPORT = "yyyy 年 MM 月 dd 日";
+
+    private final static String TITLE_ON_REPORT = "主日上午崇拜";
     private final static String SONG_URL_PREFIX = "https://hymns.oss-cn-shanghai.aliyuncs.com/pics/";
     private final static String SONG_FILE_NAME_SUFFIX = ".png";
 
@@ -42,32 +52,67 @@ public class WeeklyBookletService {
         doc.write(baos);
         doc.close();
 
-        return new ResponseEntity<>(baos.toByteArray(), getWordHeaders(yyyyMMdd), HttpStatus.OK);
+        return new ResponseEntity<>(baos.toByteArray(), getWordHttpHeaders(yyyyMMdd), HttpStatus.OK);
     }
 
     @SneakyThrows
-    private static XWPFDocument createWord(String yyyyMMdd, SundayPeriodEnum period) {
-        XWPFDocument document = new XWPFDocument();
-        XWPFParagraph paragraph = document.createParagraph();
-        paragraph.setAlignment(ParagraphAlignment.CENTER);
-        XWPFRun run = paragraph.createRun();
+    private XWPFDocument createWord(String yyyyMMdd, SundayPeriodEnum period) {
+        XWPFDocument doc = new XWPFDocument();
         if (SundayPeriodEnum.AM.equals(period)) {
-            createAmReport(yyyyMMdd, run);
-            createAmNotation(run);
+            createAmReport(yyyyMMdd, doc);
+            createAmNotation(doc);
         } else {
-            run.addBreak();
+            createPmReport(yyyyMMdd, doc);
         }
-        return document;
+        return doc;
     }
 
-    private static void createAmReport(String yyyyMMdd, XWPFRun run) throws IOException, InvalidFormatException {
-        run.setText(REPORT_TITLE);
-        run.addBreak();
-//        run.setText(theologicalSubject);
-        addPng(run, SONG_URL_PREFIX + "齐肃立称颂主" + SONG_FILE_NAME_SUFFIX);
-        run.addBreak(BreakType.COLUMN);
+    private void createAmReport(String yyyyMMdd, XWPFDocument doc) throws ParseException {
+        SundayAmMenuEntity sundayAmMenuEntity = sundayAmMenuRepository.findBySundayDate(yyyyMMdd);
+        log.debug("sundayAmMenuEntity:{}", sundayAmMenuEntity);
+        createReportHeaders(sundayAmMenuEntity, doc);
+        createPublicWorship(sundayAmMenuEntity, doc);
+        createReportFooters(sundayAmMenuEntity, doc);
     }
-    private static void createAmNotation(XWPFRun run) throws IOException, InvalidFormatException {
+
+    private void createPmReport(String yyyyMMdd, XWPFDocument doc) {
+    }
+
+    public static void createReportHeaders(SundayAmMenuEntity sundayAmMenuEntity, XWPFDocument doc) throws ParseException {
+        XWPFParagraph paragraph = doc.createParagraph();
+        paragraph.setAlignment(ParagraphAlignment.CENTER);
+        XWPFRun run = paragraph.createRun();
+
+        run.setText(TITLE_ON_REPORT);
+        run.setFontSize(28);
+        run.setFontFamily("黑体");
+        run.addBreak();
+
+        run.setText("- - - - - - - - - - - - - - - - - - -");
+        run.addBreak();
+
+        run.setText(sundayAmMenuEntity.getTheologicalSubject());
+        run.setFontSize(8);
+        run.setFontFamily("楷体");
+        run.addBreak();
+
+        run.setText(convertedSundayDesc(sundayAmMenuEntity.getSundayDate()));
+        run.setFontFamily("黑体");
+        run.addBreak();
+
+        run.setText(hostAndPastor(sundayAmMenuEntity.getSundayDate()));
+    }
+
+    public void createPublicWorship(SundayAmMenuEntity sundayAmMenuEntity, XWPFDocument doc) {
+    }
+
+    public static void createReportFooters(SundayAmMenuEntity sundayAmMenuEntity, XWPFDocument doc) {
+    }
+
+    private static void createAmNotation(XWPFDocument doc) throws IOException, InvalidFormatException {
+        XWPFParagraph paragraph = doc.createParagraph();
+        paragraph.setAlignment(ParagraphAlignment.CENTER);
+        XWPFRun run = paragraph.createRun();
         addPng(run, SONG_URL_PREFIX + "齐肃立称颂主" + SONG_FILE_NAME_SUFFIX);
         run.addBreak(BreakType.COLUMN);
         addPng(run, SONG_URL_PREFIX + "祂除我罪" + SONG_FILE_NAME_SUFFIX);
@@ -100,6 +145,16 @@ public class WeeklyBookletService {
         run.addPicture(new ByteArrayInputStream(bytes), XWPFDocument.PICTURE_TYPE_PNG, "", Units.toEMU(scaledWidth), Units.toEMU(scaledHeight));
     }
 
+    private static String hostAndPastor(String yyyyMMdd) throws ParseException {
+        Date date = SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().parse(yyyyMMdd);
+        SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().applyPattern(DATE_ON_REPORT);
+        return SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().format(date);
+    }
+    private static String convertedSundayDesc(String yyyyMMdd) throws ParseException {
+        Date date = SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().parse(yyyyMMdd);
+        SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().applyPattern(DATE_ON_REPORT);
+        return SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().format(date);
+    }
     private static void check(String yyyyMMdd) throws IllegalArgumentException {
         // check if it is a Sunday
         if (!isSunday(yyyyMMdd)) {
@@ -108,13 +163,9 @@ public class WeeklyBookletService {
     }
 
     public static boolean isSunday(String sundayDate) {
-        // 定义日期格式
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-        dateFormat.setLenient(false);
-
         try {
             // 将字符串转换为日期
-            Date date = dateFormat.parse(sundayDate);
+            Date date = SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().parse(sundayDate);
 
             // 将日期转换为日历
             Calendar calendar = Calendar.getInstance();
@@ -129,7 +180,7 @@ public class WeeklyBookletService {
         }
     }
 
-    private static HttpHeaders getWordHeaders(String yyyyMMdd) {
+    private static HttpHeaders getWordHttpHeaders(String yyyyMMdd) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentDispositionFormData("attachment", yyyyMMdd + "_AM.docx");
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);

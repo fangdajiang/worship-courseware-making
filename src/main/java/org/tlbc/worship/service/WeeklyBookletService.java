@@ -19,11 +19,16 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 
 @Service
 @Slf4j
 public class WeeklyBookletService {
 
+    private final static String REPORT_TITLE = "主日上午崇拜";
     private final static String SONG_URL_PREFIX = "https://hymns.oss-cn-shanghai.aliyuncs.com/pics/";
     private final static String SONG_FILE_NAME_SUFFIX = ".png";
 
@@ -47,19 +52,31 @@ public class WeeklyBookletService {
         paragraph.setAlignment(ParagraphAlignment.CENTER);
         XWPFRun run = paragraph.createRun();
         if (SundayPeriodEnum.AM.equals(period)) {
-            run.setText(yyyyMMdd);
-            addPng(run, SONG_URL_PREFIX + "齐肃立称颂主" + SONG_FILE_NAME_SUFFIX);
-            run.addBreak(BreakType.COLUMN);
-            addPng(run, SONG_URL_PREFIX + "祂除我罪" + SONG_FILE_NAME_SUFFIX);
-            run.addBreak(BreakType.COLUMN);
-            addPng(run, SONG_URL_PREFIX + "祢信实何广大" + SONG_FILE_NAME_SUFFIX);
-            run.addBreak(BreakType.COLUMN);
-            addPng(run, SONG_URL_PREFIX + "我何处去？" + SONG_FILE_NAME_SUFFIX);
+            createAmReport(yyyyMMdd, run);
+            createAmNotation(run);
         } else {
             run.addBreak();
         }
         return document;
     }
+
+    private static void createAmReport(String yyyyMMdd, XWPFRun run) throws IOException, InvalidFormatException {
+        run.setText(REPORT_TITLE);
+        run.addBreak();
+//        run.setText(theologicalSubject);
+        addPng(run, SONG_URL_PREFIX + "齐肃立称颂主" + SONG_FILE_NAME_SUFFIX);
+        run.addBreak(BreakType.COLUMN);
+    }
+    private static void createAmNotation(XWPFRun run) throws IOException, InvalidFormatException {
+        addPng(run, SONG_URL_PREFIX + "齐肃立称颂主" + SONG_FILE_NAME_SUFFIX);
+        run.addBreak(BreakType.COLUMN);
+        addPng(run, SONG_URL_PREFIX + "祂除我罪" + SONG_FILE_NAME_SUFFIX);
+        run.addBreak(BreakType.COLUMN);
+        addPng(run, SONG_URL_PREFIX + "祢信实何广大" + SONG_FILE_NAME_SUFFIX);
+        run.addBreak(BreakType.COLUMN);
+        addPng(run, SONG_URL_PREFIX + "我何处去？" + SONG_FILE_NAME_SUFFIX);
+    }
+
     private static final int MAX_WIDTH = 750; // Maximum width of the image in points
     private static final int MAX_HEIGHT = 750; // Maximum height of the image in points
 
@@ -85,6 +102,31 @@ public class WeeklyBookletService {
 
     private static void check(String yyyyMMdd) throws IllegalArgumentException {
         // check if it is a Sunday
+        if (!isSunday(yyyyMMdd)) {
+            throw new IllegalArgumentException("NOT VALID FORMAT yyyyMMdd:" + yyyyMMdd);
+        }
+    }
+
+    public static boolean isSunday(String sundayDate) {
+        // 定义日期格式
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        dateFormat.setLenient(false);
+
+        try {
+            // 将字符串转换为日期
+            Date date = dateFormat.parse(sundayDate);
+
+            // 将日期转换为日历
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(date);
+
+            // 检查是否为星期天
+            return calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY;
+
+        } catch (ParseException e) {
+            log.error("Invalid sundayDate: " + sundayDate);
+            return false;
+        }
     }
 
     private static HttpHeaders getWordHeaders(String yyyyMMdd) {

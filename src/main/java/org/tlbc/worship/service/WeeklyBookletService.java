@@ -34,8 +34,7 @@ public class WeeklyBookletService {
     @Resource
     private SundayAmMenuRepository sundayAmMenuRepository;
 
-    private static final ThreadLocal<SimpleDateFormat> SIMPLE_DATE_FORMAT_THREAD_LOCAL =
-            ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd"));
+    private final static String DATE_FORMAT = "yyyyMMdd";
     private final static String DATE_ON_REPORT = "yyyy 年 MM 月 dd 日";
 
     private final static String TITLE_ON_REPORT = "主日上午崇拜";
@@ -70,6 +69,9 @@ public class WeeklyBookletService {
     private void createAmReport(String yyyyMMdd, XWPFDocument doc) throws ParseException {
         SundayAmMenuEntity sundayAmMenuEntity = sundayAmMenuRepository.findBySundayDate(yyyyMMdd);
         log.debug("sundayAmMenuEntity:{}", sundayAmMenuEntity);
+        if (null == sundayAmMenuEntity) {
+            throw new IllegalArgumentException("Not Found:" + yyyyMMdd);
+        }
         createReportHeaders(sundayAmMenuEntity, doc);
         createPublicWorship(sundayAmMenuEntity, doc);
         createReportFooters(sundayAmMenuEntity, doc);
@@ -79,31 +81,51 @@ public class WeeklyBookletService {
     }
 
     public static void createReportHeaders(SundayAmMenuEntity sundayAmMenuEntity, XWPFDocument doc) throws ParseException {
+        createReportTitle(doc);
+        createReportTheologicalSubject(sundayAmMenuEntity.getTheologicalSubject(), doc);
+        createReportSundayDesc(sundayAmMenuEntity.getSundayDate(), doc);
+        createReportHostAndPastor(sundayAmMenuEntity.getSundayDate(), doc);
+    }
+    public static void createReportTitle(XWPFDocument doc) {
         XWPFParagraph paragraph = doc.createParagraph();
         paragraph.setAlignment(ParagraphAlignment.CENTER);
         XWPFRun run = paragraph.createRun();
-
-        run.setText(TITLE_ON_REPORT);
-        run.setFontSize(28);
+        run.setFontSize(14);
         run.setFontFamily("黑体");
+        run.setText(TITLE_ON_REPORT);
         run.addBreak();
-
-        run.setText("- - - - - - - - - - - - - - - - - - -");
-        run.addBreak();
-
-        run.setText(sundayAmMenuEntity.getTheologicalSubject());
+        run.setText("————————————————————");
+    }
+    public static void createReportTheologicalSubject(String theologicalSubject, XWPFDocument doc) {
+        XWPFParagraph paragraph = doc.createParagraph();
+        paragraph.setAlignment(ParagraphAlignment.CENTER);
+        XWPFRun run = paragraph.createRun();
         run.setFontSize(8);
         run.setFontFamily("楷体");
-        run.addBreak();
-
-        run.setText(convertedSundayDesc(sundayAmMenuEntity.getSundayDate()));
+        run.setText(theologicalSubject);
+    }
+    public static void createReportSundayDesc(String sundayDate, XWPFDocument doc) throws ParseException {
+        XWPFParagraph paragraph = doc.createParagraph();
+        paragraph.setAlignment(ParagraphAlignment.CENTER);
+        XWPFRun run = paragraph.createRun();
+        run.setFontSize(8);
         run.setFontFamily("黑体");
-        run.addBreak();
-
-        run.setText(hostAndPastor(sundayAmMenuEntity.getSundayDate()));
+        run.setText(convertedSundayDesc(sundayDate));
+    }
+    public static void createReportHostAndPastor(String sundayDate, XWPFDocument doc) throws ParseException {
+        XWPFParagraph paragraph = doc.createParagraph();
+        paragraph.setAlignment(ParagraphAlignment.CENTER);
+        XWPFRun run = paragraph.createRun();
+        run.setText(hostAndPastor(sundayDate));
     }
 
     public void createPublicWorship(SundayAmMenuEntity sundayAmMenuEntity, XWPFDocument doc) {
+        XWPFParagraph paragraph = doc.createParagraph();
+        XWPFRun run = paragraph.createRun();
+        run.setFontSize(14);
+        run.setFontFamily("黑体");
+
+        run.setText("预备诗歌");
     }
 
     public static void createReportFooters(SundayAmMenuEntity sundayAmMenuEntity, XWPFDocument doc) {
@@ -145,27 +167,29 @@ public class WeeklyBookletService {
         run.addPicture(new ByteArrayInputStream(bytes), XWPFDocument.PICTURE_TYPE_PNG, "", Units.toEMU(scaledWidth), Units.toEMU(scaledHeight));
     }
 
-    private static String hostAndPastor(String yyyyMMdd) throws ParseException {
-        Date date = SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().parse(yyyyMMdd);
-        SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().applyPattern(DATE_ON_REPORT);
-        return SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().format(date);
+    public static String hostAndPastor(String yyyyMMdd) throws ParseException {
+        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+        Date date = sdf.parse(yyyyMMdd);
+        sdf.applyPattern(DATE_ON_REPORT);
+        return sdf.format(date);
     }
     private static String convertedSundayDesc(String yyyyMMdd) throws ParseException {
-        Date date = SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().parse(yyyyMMdd);
-        SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().applyPattern(DATE_ON_REPORT);
-        return SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().format(date);
+        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+        Date date = sdf.parse(yyyyMMdd);
+        sdf.applyPattern(DATE_ON_REPORT);
+        return sdf.format(date);
     }
     private static void check(String yyyyMMdd) throws IllegalArgumentException {
         // check if it is a Sunday
         if (!isSunday(yyyyMMdd)) {
-            throw new IllegalArgumentException("NOT VALID FORMAT yyyyMMdd:" + yyyyMMdd);
+            throw new IllegalArgumentException("NOT VALID SUNDAY:" + yyyyMMdd);
         }
     }
 
     public static boolean isSunday(String sundayDate) {
         try {
             // 将字符串转换为日期
-            Date date = SIMPLE_DATE_FORMAT_THREAD_LOCAL.get().parse(sundayDate);
+            Date date = new SimpleDateFormat(DATE_FORMAT).parse(sundayDate);
 
             // 将日期转换为日历
             Calendar calendar = Calendar.getInstance();

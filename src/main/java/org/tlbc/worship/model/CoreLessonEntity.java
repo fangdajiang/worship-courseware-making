@@ -16,10 +16,8 @@ public class CoreLessonEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false)
     private Integer id;
-    @Column(name = "core_lesson_name", unique = true, nullable = false)
-    private String coreLessonName;
-    @Column(name = "core_lesson_teacher", nullable = false)
-    private String coreLessonTeacher;
-    @Column(name = "core_lesson_quantity", nullable = false)
-    private Integer coreLessonQuantity;
+    @Column(name = "name", unique = true, nullable = false)
+    private String name;
+    @Column(name = "quantity", nullable = false)
+    private Integer quantity;
 }

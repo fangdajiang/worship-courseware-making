@@ -39,9 +39,7 @@ CREATE TABLE `sunday_am_menu` (
 -- 转存表中的数据 `sunday_am_menu`
 --
 
-INSERT INTO `sunday_am_menu` (`id`, `host`, `pastor`, `sunday_date`, `theological_subject`) VALUES
-    (1, '赵颐', '陈雅各', '20230129', '我们今天聚集是为要敬拜那位审判罪人的神');
-
+INSERT INTO `sunday_am_menu` (`id`, `call_to_worship`, `doctrine`, `end_hymn`, `host`, `new_testament_reader`, `old_testament_reader`, `pastor_praying`, `praise_prayer`, `preacher`, `sermon`, `sermon_hymn`, `sunday_date`, `thanks_prayer`, `theological_subject`) VALUES ('1', '诗篇118:1-4', '1689改革宗浸信会信仰告白（4.2）', '主在我们中间', '赵颐执事', '曹以琳', '曹以琳', '陈雅各', '张静', '陈雅各', '罗马书3:9-20，没有义人', '我何处去', '20230129', '闫晓燕', '我们今天聚集是为要敬拜那位审判罪人的神');
 --
 -- 转储表的索引
 --

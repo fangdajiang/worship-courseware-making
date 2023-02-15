@@ -23,6 +23,26 @@ public class SundayAmMenuEntity {
     private String theologicalSubject;
     @Column(name = "host", nullable = false)
     private String host;
-    @Column(name = "pastor", nullable = false)
-    private String pastor;
+    @Column(name = "preacher", nullable = false)
+    private String preacher;
+    @Column(name = "call_to_worship", nullable = false)
+    private String callToWorship;
+    @Column(name = "praise_prayer", nullable = false)
+    private String praisePrayer;
+    @Column(name = "old_testament_reader", nullable = false)
+    private String oldTestamentReader;
+    @Column(name = "doctrine", nullable = false)
+    private String doctrine;
+    @Column(name = "new_testament_reader", nullable = false)
+    private String newTestamentReader;
+    @Column(name = "pastor_praying", nullable = false)
+    private String pastorPraying;
+    @Column(name = "thanks_prayer", nullable = false)
+    private String thanksPrayer;
+    @Column(name = "end_hymn", nullable = false)
+    private String endHymn;
+    @Column(name = "sermon", nullable = false)
+    private String sermon;
+    @Column(name = "sermon_hymn", nullable = false)
+    private String sermonHymn;
 }

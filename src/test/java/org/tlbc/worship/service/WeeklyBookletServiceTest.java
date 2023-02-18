@@ -8,8 +8,6 @@ import org.tlbc.worship.repository.SundayAmMenuRepository;
 
 import javax.annotation.Resource;
 
-import java.text.ParseException;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j @SpringBootTest
@@ -51,9 +49,31 @@ class WeeklyBookletServiceTest {
     }
 
     @Test
-    void coreLessonArrangement() throws ParseException {
+    void coreLessonArrangement() {
         String s = weeklyBookletService.coreLessonArrangement("20230129");
         log.debug("s: {}", s);
         assertFalse(s.isEmpty());
+    }
+
+    @Test
+    void createReportTitle() {
+    }
+
+    @Test
+    void createReportTheologicalSubject() {
+    }
+
+    @Test
+    void createReportTeaching() {
+    }
+
+    @Test
+    void hostCommunion() {
+        boolean hostCommunion = WeeklyBookletService.hostCommunion("20230305");
+        log.debug("hostCommunion:{}", hostCommunion);
+    }
+
+    @Test
+    void hostAndPreacher() {
     }
 }

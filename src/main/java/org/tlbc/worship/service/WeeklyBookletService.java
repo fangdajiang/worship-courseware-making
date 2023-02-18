@@ -29,6 +29,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -88,6 +91,7 @@ public class WeeklyBookletService {
         }
         createReportHeaders(sundayAmMenuEntity, doc);
         createPublicWorship(sundayAmMenuEntity.getSundayDate(), doc);
+        createPublicWorshipComment(sundayAmMenuEntity.getSundayDate(), doc);
         createReportFooters(sundayAmMenuEntity, doc);
     }
 
@@ -143,41 +147,69 @@ public class WeeklyBookletService {
         run.setFontFamily("黑体");
         run.setText("10:15 公共崇拜");
         run.addBreak();
-        run.setText("● 预备诗歌");
+        run.setText("• 预备诗歌");
         run.addBreak();
-        run.setText("● 欢迎和报告");
+        run.setText("• 欢迎和报告");
         run.addBreak();
-        run.setText("● 宣召：" + sundayAmMenuEntity.getCallToWorship());
+        run.setText("• 宣召：" + sundayAmMenuEntity.getCallToWorship());
         run.addBreak();
-        run.setText("● 诗歌：" + hymnArrangements.get(0).getNameCn());
+        run.setText("• 诗歌：《" + hymnArrangements.get(0).getNameCn() + "》");
         run.addBreak();
-        run.setText("● 赞美祷告：" + sundayAmMenuEntity.getPraisePrayer());
+        run.setText("• 赞美祷告（" + sundayAmMenuEntity.getPraisePrayer() + "）");
         run.addBreak();
-        run.setText("● 旧约读经：" + sundayAmMenuEntity.getOldTestamentReader());
+        run.setText("• 旧约读经：" + sundayAmMenuEntity.getOldTestamentScripture() + "(" + sundayAmMenuEntity.getOldTestamentReader() + ")");
         run.addBreak();
-        run.setText("● 诗歌：" + hymnArrangements.get(1).getNameCn());
+        run.setText("• 诗歌：《" + hymnArrangements.get(1).getNameCn() + "》");
         run.addBreak();
-        run.setText("● 教理：" + sundayAmMenuEntity.getDoctrine());
+        run.setText("• 教理：" + sundayAmMenuEntity.getDoctrineAbbr());
         run.addBreak();
-        run.setText("● 诗歌：" + hymnArrangements.get(2).getNameCn());
+        run.setText("• 诗歌：《" + hymnArrangements.get(2).getNameCn() + "》");
         run.addBreak();
-        run.setText("● 新约读经：" + sundayAmMenuEntity.getNewTestamentReader());
+        run.setText("• 新约读经：" + sundayAmMenuEntity.getNewTestamentScripture() + "(" + sundayAmMenuEntity.getNewTestamentReader() + ")");
         run.addBreak();
-        run.setText("● 牧祷祈求：" + sundayAmMenuEntity.getPastorPraying());
+        run.setText("• 牧祷祈求（" + sundayAmMenuEntity.getPastorPraying() + "）");
         run.addBreak();
-        run.setText("● 诗歌：" + hymnArrangements.get(3).getNameCn());
+        run.setText("• 诗歌：《" + hymnArrangements.get(3).getNameCn() + "》");
         run.addBreak();
-        run.setText("● 奉献");
+        run.setText("• 奉献【请将准备好的奉献放入信封后投入奉献袋】");
         run.addBreak();
-        run.setText("● 感恩祷告：" + sundayAmMenuEntity.getThanksPrayer());
+        run.setText("• 感恩祷告（" + sundayAmMenuEntity.getThanksPrayer() + "）");
         run.addBreak();
-        run.setText("● " + sundayAmMenuEntity.getEndHymn());
+        run.setText("• 《" + sundayAmMenuEntity.getEndHymn() + "》【此后儿童请听领会安排前往相应的教室】");
         run.addBreak();
-        run.setText("● 讲道信息：" + sundayAmMenuEntity.getSermon());
+        if (hostCommunion(sundayDesc)) {
+            run.setText("• 主餐†（" + sundayAmMenuEntity.getPreacher() + "）");
+            run.addBreak();
+        }
+        run.setText("• 讲道信息：" + sundayAmMenuEntity.getSermonTitle());
         run.addBreak();
-        run.setText("● 回应诗歌：" + sundayAmMenuEntity.getSermonHymn());
+        run.setText("• 回应诗歌：《" + sundayAmMenuEntity.getSermonHymn() + "》");
         run.addBreak();
-        run.setText("● 祝福");
+        run.setText("• 祝福††");
+    }
+    public void createPublicWorshipComment(String sundayDesc, XWPFDocument doc) {
+        XWPFParagraph paragraph = doc.createParagraph();
+        paragraph.setAlignment(ParagraphAlignment.LEFT);
+        XWPFRun run = paragraph.createRun();
+        run.setFontSize(8);
+        run.setFontFamily("黑体");
+        if (hostCommunion(sundayDesc)) {
+            run.setText("† 非本教会成员需和长老面谈后，获得长老准许方可同领主餐。详见封底通知部分");
+            run.addBreak();
+        }
+        run.setText("†† 祝福后，请在原座默想片刻随司琴的音乐而结束聚会。");
+    }
+
+    public static boolean hostCommunion(String sundayDate) {
+        int year = Integer.parseInt(sundayDate.substring(0, 4));
+        int month = Integer.parseInt(sundayDate.substring(4, 6));
+        LocalDate firstDayOfMonth = LocalDate.of(year, month, 1);
+        DayOfWeek dayOfWeek = firstDayOfMonth.getDayOfWeek();
+        int daysUntilFirstSunday = DayOfWeek.SUNDAY.getValue() - dayOfWeek.getValue();
+        if (daysUntilFirstSunday < 0) {
+            daysUntilFirstSunday += 7;
+        }
+        return firstDayOfMonth.plusDays(daysUntilFirstSunday).format(DateTimeFormatter.ofPattern(DATE_FORMAT)).equals(sundayDate);
     }
 
     public static void createReportFooters(SundayAmMenuEntity sundayAmMenuEntity, XWPFDocument doc) {
@@ -219,7 +251,7 @@ public class WeeklyBookletService {
         run.addPicture(new ByteArrayInputStream(bytes), XWPFDocument.PICTURE_TYPE_PNG, "", Units.toEMU(scaledWidth), Units.toEMU(scaledHeight));
     }
 
-    public String coreLessonArrangement(String yyyyMMdd) throws ParseException {
+    public String coreLessonArrangement(String yyyyMMdd) {
         List<SundayCoreLessonArrangementEntity> coreLessonArrangement = sundayCoreLessonArrangementRepository.findBySundayDate(yyyyMMdd);
         Assert.isTrue(coreLessonArrangement.size() >= CORE_LESSON_MIN_COUNT,
                 "core lessons count must >= " + CORE_LESSON_MIN_COUNT);

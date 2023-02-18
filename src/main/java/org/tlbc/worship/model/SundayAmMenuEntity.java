@@ -31,18 +31,42 @@ public class SundayAmMenuEntity {
     private String praisePrayer;
     @Column(name = "old_testament_reader", nullable = false)
     private String oldTestamentReader;
-    @Column(name = "doctrine", nullable = false)
-    private String doctrine;
+    @Column(name = "old_testament_scripture", nullable = false)
+    private String oldTestamentScripture;
+    @Column(name = "doctrine_abbr")
+    private String doctrineAbbr;
+    @Column(name = "doctrine_title")
+    private String doctrineTitle;
+    @Column(name = "doctrine_content")
+    private String doctrineContent;
     @Column(name = "new_testament_reader", nullable = false)
     private String newTestamentReader;
+    @Column(name = "new_testament_scripture", nullable = false)
+    private String newTestamentScripture;
     @Column(name = "pastor_praying", nullable = false)
     private String pastorPraying;
     @Column(name = "thanks_prayer", nullable = false)
     private String thanksPrayer;
     @Column(name = "end_hymn", nullable = false)
     private String endHymn;
-    @Column(name = "sermon", nullable = false)
-    private String sermon;
+    @Column(name = "sermon_title", nullable = false)
+    private String sermonTitle;
+    @Column(name = "sermon_outline")
+    private String sermonOutline;
     @Column(name = "sermon_hymn", nullable = false)
     private String sermonHymn;
+
+    @Column(name = "worship_notice1", columnDefinition = "varchar(2048)", nullable = false)
+    private String worshipNotice1;
+    @Column(name = "worship_notice2", columnDefinition = "varchar(2048)", nullable = false)
+    private String worshipNotice2;
+
+    @Column(name = "usher")
+    private String usher;
+    @Column(name = "servant_for_kids")
+    private String servantForKids;
+    @Column(name = "servant_for_audio_video")
+    private String servantForAudioVideo;
+    @Column(name = "duty_manager")
+    private String dutyManager;
 }
